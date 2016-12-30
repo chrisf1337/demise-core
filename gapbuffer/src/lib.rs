@@ -29,6 +29,28 @@ impl GapBuffer {
         }
     }
 
+    fn move_gap(&mut self, point: usize) {
+        if point < self.gap_start_idx {
+            // Move chars on and after point to last half
+            let mut moved_chars_copy = vec!['\0'; self.gap_start_idx - point];
+            moved_chars_copy.copy_from_slice(&self.buf[point..self.gap_start_idx]);
+            let moved_chars_slice = &mut self.buf[self.gap_end_idx - moved_chars_copy.len()..self.gap_end_idx];
+            moved_chars_slice.copy_from_slice(&moved_chars_copy);
+            self.gap_start_idx -= moved_chars_copy.len();
+            self.gap_end_idx -= moved_chars_copy.len();
+        } else if point > self.gap_start_idx {
+            // Move chars before and on point to first half
+            let mut moved_chars_copy = vec!['\0'; point - self.gap_start_idx];
+            let moved_chars_copy_len = moved_chars_copy.len();
+            moved_chars_copy.copy_from_slice(&self.buf[self.gap_end_idx..self.gap_end_idx + moved_chars_copy_len]);
+            let moved_chars_slice = &mut self.buf[self.gap_start_idx..self.gap_start_idx + moved_chars_copy.len()];
+            moved_chars_slice.copy_from_slice(&moved_chars_copy);
+            self.gap_start_idx += moved_chars_copy.len();
+            self.gap_end_idx += moved_chars_copy.len();
+        }
+        assert_eq!(point, self.gap_start_idx);
+    }
+
     pub fn insert_at_pt(&mut self, string: &str, point: usize) {
         let mut gap_len = self.gap_end_idx - self.gap_start_idx;
         if string.len() > gap_len {
@@ -61,25 +83,7 @@ impl GapBuffer {
                 }
             }
         }
-        if point < self.gap_start_idx {
-            // Move chars on and after point to last half
-            let mut moved_chars_copy = vec!['\0'; self.gap_start_idx - point];
-            moved_chars_copy.copy_from_slice(&self.buf[point..self.gap_start_idx]);
-            let moved_chars_slice = &mut self.buf[self.gap_end_idx - moved_chars_copy.len()..self.gap_end_idx];
-            moved_chars_slice.copy_from_slice(&moved_chars_copy);
-            self.gap_start_idx -= moved_chars_copy.len();
-            self.gap_end_idx -= moved_chars_copy.len();
-        } else if point > self.gap_start_idx {
-            // Move chars before and on point to first half
-            let mut moved_chars_copy = vec!['\0'; point - self.gap_start_idx];
-            let moved_chars_copy_len = moved_chars_copy.len();
-            moved_chars_copy.copy_from_slice(&self.buf[self.gap_end_idx..self.gap_end_idx + moved_chars_copy_len]);
-            let moved_chars_slice = &mut self.buf[self.gap_start_idx..self.gap_start_idx + moved_chars_copy.len()];
-            moved_chars_slice.copy_from_slice(&moved_chars_copy);
-            self.gap_start_idx += moved_chars_copy.len();
-            self.gap_end_idx += moved_chars_copy.len();
-        }
-        assert_eq!(point, self.gap_start_idx);
+        self.move_gap(point);
         let string_chars = string.to_string().chars().collect::<Vec<char>>();
         let copy_slice = &mut self.buf[self.gap_start_idx..self.gap_start_idx + string_chars.len()];
         copy_slice.copy_from_slice(&string_chars);
