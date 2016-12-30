@@ -261,3 +261,34 @@ fn test_delete_at_pt_simple2() {
     s = (&gb.buf[gb.gap_end_idx..]).iter().cloned().collect::<String>();
     assert_eq!(s, "e");
 }
+
+#[test]
+/// Resizing
+fn test_delete_at_pt_resize1() {
+    let first_chars = "ab".chars().collect::<Vec<char>>();
+    let last_chars = "cde".chars().collect::<Vec<char>>();
+    let initial_buf_len = 20;
+    let mut gb = GapBuffer {
+        text_len: first_chars.len() + last_chars.len(),
+        buf: vec!['\0'; initial_buf_len],
+        gap_start_idx: first_chars.len(),
+        gap_end_idx: initial_buf_len - last_chars.len(),
+        point_idx: 0
+    };
+
+    &mut gb.buf[..first_chars.len()].copy_from_slice(&first_chars);
+    &mut gb.buf[initial_buf_len - last_chars.len()..].copy_from_slice(&last_chars);
+
+    let result = gb.delete_at_pt(1, 3);
+    // New length is 5
+    assert!(result.is_ok());
+    assert_eq!(gb.text_len, 2);
+    assert_eq!(gb.gap_start_idx, 1);
+    assert_eq!(gb.gap_end_idx, 4);
+
+    let mut s = (&gb.buf[..gb.gap_start_idx]).iter().cloned().collect::<String>();
+    assert_eq!(s, "a");
+
+    s = (&gb.buf[gb.gap_end_idx..]).iter().cloned().collect::<String>();
+    assert_eq!(s, "e");
+}

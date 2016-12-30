@@ -68,9 +68,10 @@ impl GapBuffer {
     }
 
     /// Inserts the string at the point. point must be valid (in the range [0,
-    /// buf.len()]). If the point is not the gap start index, we move the gap by
-    /// copying all characters in the current half to the other half so that the
-    /// new gap start index is at point (see move_gap()).
+    /// buf.len()]). If not, a GbErr will be returned. If the point is not the
+    /// gap start index, we move the gap by copying all characters in the
+    /// current half to the other half so that the new gap start index is at
+    /// point (see move_gap()).
     ///
     /// Inserting at point p results in the first char of string to be located
     /// at p, and the point will be updated to p + string.len() (as will the gap
@@ -127,6 +128,10 @@ impl GapBuffer {
         Ok(())
     }
 
+    /// Deletes length chars starting from point. point must be valid (in the
+    /// range [0, buf.len()]). If not, a GbErr will be returned. Deletion is
+    /// performed by moving the gap to point, then adding length to the gap end
+    /// index.
     pub fn delete_at_pt(&mut self, point: usize, length: usize) -> GbResult {
         if point > self.text_len {
             return Err(GbErr::InvalidPoint);
@@ -138,6 +143,15 @@ impl GapBuffer {
         self.move_gap(point);
         self.gap_end_idx += length;
         self.text_len -= length;
+
+        if self.text_len < self.buf.len() / 4 {
+            let new_len = self.buf.len() / 4;
+            let mut last_half_copy = vec!['\0'; self.buf.len() - self.gap_end_idx];
+            last_half_copy.copy_from_slice(&self.buf[self.gap_end_idx..]);
+            self.buf.resize(new_len, '\0');
+            &mut self.buf[new_len - last_half_copy.len()..].copy_from_slice(&last_half_copy);
+            self.gap_end_idx = self.buf.len() - last_half_copy.len();
+        }
         Ok(())
     }
 }
