@@ -8,6 +8,14 @@ pub struct GapBuffer {
     pub point_idx: usize,
 }
 
+#[derive(PartialEq, Debug)]
+pub enum GbErr {
+    InvalidPoint,
+    InvalidDeletionLength
+}
+
+type GbResult = Result<(), GbErr>;
+
 impl GapBuffer {
     pub fn new() -> GapBuffer {
         GapBuffer {
@@ -29,9 +37,13 @@ impl GapBuffer {
         }
     }
 
+    /// Moves the gap so that it starts at point. point must be valid (in the
+    /// range [0, buf.len()]).
     fn move_gap(&mut self, point: usize) {
-        if self.gap_start_idx == self.buf.len() {
-            // Return if there is no gap
+        if self.gap_start_idx == self.gap_end_idx {
+            // If there is no gap, just update the indices
+            self.gap_start_idx = point;
+            self.gap_end_idx = point;
             return;
         }
         if point < self.gap_start_idx {
@@ -55,10 +67,10 @@ impl GapBuffer {
         assert_eq!(point, self.gap_start_idx);
     }
 
-    /// Inserts the string at the point. If the point is not the gap start
-    /// index, we move the gap by copying all characters in the current half to
-    /// the other half so that the new gap start index is at point
-    /// (see move_gap()).
+    /// Inserts the string at the point. point must be valid (in the range [0,
+    /// buf.len()]). If the point is not the gap start index, we move the gap by
+    /// copying all characters in the current half to the other half so that the
+    /// new gap start index is at point (see move_gap()).
     ///
     /// Inserting at point p results in the first char of string to be located
     /// at p, and the point will be updated to p + string.len() (as will the gap
@@ -69,7 +81,10 @@ impl GapBuffer {
     ///
     /// If we insert a string that is exactly the same length as the gap, the
     /// gap start and end indexes will be updated to buf.len().
-    pub fn insert_at_pt(&mut self, string: &str, point: usize) {
+    pub fn insert_at_pt(&mut self, string: &str, point: usize) -> GbResult {
+        if point > self.text_len {
+            return Err(GbErr::InvalidPoint);
+        }
         let mut gap_len = self.gap_end_idx - self.gap_start_idx;
         if string.len() > gap_len {
             // Increase size of buffer
@@ -108,13 +123,21 @@ impl GapBuffer {
             copy_slice.copy_from_slice(&string_chars);
         }
         self.gap_start_idx += string_chars.len();
-        self.point_idx = self.gap_start_idx;
         self.text_len += string_chars.len();
+        Ok(())
+    }
 
-        // No more gap if gap_start_idx == gap_end_idx
-        if self.gap_start_idx == self.gap_end_idx {
-            self.gap_start_idx = self.buf.len();
-            self.gap_end_idx = self.buf.len();
+    pub fn delete_at_pt(&mut self, point: usize, length: usize) -> GbResult {
+        if point > self.text_len {
+            return Err(GbErr::InvalidPoint);
         }
+        if point + length > self.text_len {
+            return Err(GbErr::InvalidDeletionLength);
+        }
+
+        self.move_gap(point);
+        self.gap_end_idx += length;
+        self.text_len -= length;
+        Ok(())
     }
 }
