@@ -120,7 +120,8 @@ impl GapBuffer {
         self.move_gap(point);
         let string_chars = string.to_string().chars().collect::<Vec<char>>();
         {
-            let copy_slice = &mut self.buf[self.gap_start_idx..self.gap_start_idx + string_chars.len()];
+            let copy_slice = &mut self.buf[self.gap_start_idx..self.gap_start_idx
+                + string_chars.len()];
             copy_slice.copy_from_slice(&string_chars);
         }
         self.gap_start_idx += string_chars.len();
