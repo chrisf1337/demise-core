@@ -1,11 +1,23 @@
 const INTIAL_BUFFER_LENGTH: usize = 1024;
 
 pub struct GapBuffer {
-    pub text_len: usize,
     pub buf: Vec<char>,
+
+    // text_len is the sum of the lengths of the first and last halves
+    pub text_len: usize,
+
     pub gap_start_idx: usize,
+
+    // gap_end_idx is actually one after the actual gap end index. This makes
+    // most calculations easier since most of the time we just want to figure
+    // out the length of the gap.
     pub gap_end_idx: usize,
+
+    // User insertion point
     pub point_idx: usize,
+
+    // Tuples are (start, length)
+    pub lines: Vec<(usize, usize)>
 }
 
 #[derive(PartialEq, Debug)]
@@ -24,6 +36,7 @@ impl GapBuffer {
             gap_start_idx: 0,
             gap_end_idx: INTIAL_BUFFER_LENGTH,
             point_idx: 0,
+            lines: vec![],
         }
     }
 
@@ -34,6 +47,15 @@ impl GapBuffer {
             gap_start_idx: 0,
             gap_end_idx: capacity,
             point_idx: 0,
+            lines: vec![],
+        }
+    }
+
+    pub fn convert_pt_txt_to_buf_space(&self, point: usize) -> usize {
+        if point < self.gap_start_idx {
+            point
+        } else {
+            point + self.gap_end_idx - self.gap_start_idx
         }
     }
 

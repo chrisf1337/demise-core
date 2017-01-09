@@ -215,7 +215,8 @@ fn test_delete_at_pt_simple1() {
         buf: vec!['\0'; 10],
         gap_start_idx: chars.len(),
         gap_end_idx: 10,
-        point_idx: 0
+        point_idx: 0,
+        lines: vec![]
     };
 
     &mut gb.buf[..chars.len()].copy_from_slice(&chars);
@@ -243,7 +244,8 @@ fn test_delete_at_pt_simple2() {
         buf: vec!['\0'; 10],
         gap_start_idx: first_chars.len(),
         gap_end_idx: 10 - last_chars.len(),
-        point_idx: 0
+        point_idx: 0,
+        lines: vec![]
     };
 
     &mut gb.buf[..first_chars.len()].copy_from_slice(&first_chars);
@@ -273,7 +275,8 @@ fn test_delete_at_pt_resize1() {
         buf: vec!['\0'; initial_buf_len],
         gap_start_idx: first_chars.len(),
         gap_end_idx: initial_buf_len - last_chars.len(),
-        point_idx: 0
+        point_idx: 0,
+        lines: vec![]
     };
 
     &mut gb.buf[..first_chars.len()].copy_from_slice(&first_chars);
@@ -291,4 +294,25 @@ fn test_delete_at_pt_resize1() {
 
     s = (&gb.buf[gb.gap_end_idx..]).iter().cloned().collect::<String>();
     assert_eq!(s, "e");
+}
+
+#[test]
+/// Converting point from gap to buffer space. Both halves
+/// 0 1 2 3 4 5 6 7 8 9
+/// a b           c d e
+fn test_convert_pt_txt_to_buf_space() {
+    let first_chars = "ab".chars().collect::<Vec<char>>();
+    let last_chars = "cde".chars().collect::<Vec<char>>();
+    let gb = GapBuffer {
+        text_len: first_chars.len() + last_chars.len(),
+        buf: vec!['\0'; 10],
+        gap_start_idx: first_chars.len(),
+        gap_end_idx: 10 - last_chars.len(),
+        point_idx: 0,
+        lines: vec![]
+    };
+
+    assert_eq!(gb.convert_pt_txt_to_buf_space(1), 1);
+    assert_eq!(gb.convert_pt_txt_to_buf_space(2), 7);
+    assert_eq!(gb.convert_pt_txt_to_buf_space(3), 8);
 }
