@@ -115,7 +115,7 @@ fn test_insert_at_pt_simple6() {
     gb.text_len = 5;
 
     assert!(gb.insert_at_pt("fg", 5).is_ok());
-    // First half is "abcdfg", second half is "e"
+    // First half is "abcdefg", second half is ""
     assert_eq!(gb.gap_start_idx, 7);
     assert_eq!(gb.gap_end_idx, 10);
     assert_eq!(gb.text_len, 7);
