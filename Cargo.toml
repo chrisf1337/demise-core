@@ -7,4 +7,5 @@ authors = ["Christopher Fu <chrisf1337@gmail.com>"]
 rmp = "0.7.5"
 rmp-serde = "0.10.0"
 gapbuffer = { path = "gapbuffer" }
+buffer = { path = "buffer" }
 byteorder = "1.0.0"

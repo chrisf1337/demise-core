@@ -1,7 +1,9 @@
 extern crate gapbuffer;
+extern crate buffer;
 extern crate byteorder;
 
 use gapbuffer::GapBuffer;
+use buffer::Buffer;
 
 use std::net::{TcpListener, TcpStream};
 use std::thread;
@@ -54,11 +56,6 @@ fn main() {
     let editor = Arc::new(Mutex::new(Editor {
         buffer: GapBuffer::new()
     }));
-
-    {
-        let editor = editor.clone().lock().unwrap();
-        editor.insert_at_pt("\n", 0);
-    }
 
     let in_listener = TcpListener::bind(format!("127.0.0.1:{}", IN_PORT).as_str()).unwrap();
     let out_listener = TcpListener::bind(format!("127.0.0.1:{}", OUT_PORT).as_str()).unwrap();

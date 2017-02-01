@@ -2,11 +2,16 @@
 name = "demise-core"
 version = "0.1.0"
 dependencies = [
+ "buffer 0.1.0",
  "byteorder 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gapbuffer 0.1.0",
  "rmp 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rmp-serde 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "buffer"
+version = "0.1.0"
 
 [[package]]
 name = "byteorder"
