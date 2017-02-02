@@ -1,8 +1,6 @@
-extern crate gapbuffer;
 extern crate buffer;
 extern crate byteorder;
 
-use gapbuffer::GapBuffer;
 use buffer::Buffer;
 
 use std::net::{TcpListener, TcpStream};
@@ -17,7 +15,7 @@ const OUT_PORT: i16 = 8766;
 const PACKET_SIZE_BYTES: usize = 4;
 
 struct Editor {
-    buffer: GapBuffer
+    buffer: Buffer
 }
 
 fn in_handle_client(mut stream: TcpStream) {
@@ -54,7 +52,7 @@ fn out_handle_client(stream: TcpStream) {
 
 fn main() {
     let editor = Arc::new(Mutex::new(Editor {
-        buffer: GapBuffer::new()
+        buffer: Buffer::new()
     }));
 
     let in_listener = TcpListener::bind(format!("127.0.0.1:{}", IN_PORT).as_str()).unwrap();

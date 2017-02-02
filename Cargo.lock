@@ -4,7 +4,6 @@ version = "0.1.0"
 dependencies = [
  "buffer 0.1.0",
  "byteorder 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gapbuffer 0.1.0",
  "rmp 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rmp-serde 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -22,10 +21,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "byteorder"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "gapbuffer"
-version = "0.1.0"
 
 [[package]]
 name = "rmp"
