@@ -11,9 +11,9 @@ fn test_insert_empty_buffer1() {
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(0, 3)).unwrap(), "abc");
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(1, 0)).unwrap(), "abc\n");
     assert_eq!(buf.region_to_str(&Point::new(1, 0), &Point::new(1, 1)).unwrap_err(),
-        BufErr::InvalidPoint);
+        BufErr::InvalidEndPoint);
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(2, 0)).unwrap_err(),
-        BufErr::InvalidPoint);
+        BufErr::InvalidEndPoint);
 }
 
 #[test]
@@ -27,7 +27,7 @@ fn test_insert_empty_buffer2() {
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(1, 2)).unwrap(), "abc\nde");
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(2, 0)).unwrap(), "abc\nde\n");
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(1, 4)).unwrap_err(),
-        BufErr::InvalidPoint);
+        BufErr::InvalidEndPoint);
 }
 
 #[test]
@@ -95,7 +95,8 @@ fn test_insert_end_of_buffer1() {
 fn test_region_to_str1() {
     let buf = Buffer::new();
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(0, 0)).unwrap(), "");
-    assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(0, 1)).unwrap_err(), BufErr::InvalidPoint);
+    assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(0, 1)).unwrap_err(),
+        BufErr::InvalidEndPoint);
 }
 
 #[test]
@@ -126,7 +127,7 @@ fn test_delete_region2() {
     assert_eq!(buf.text_len, 1);
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(1, 0)).unwrap(), "\n");
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(0, 1)).unwrap_err(),
-        BufErr::InvalidPoint);
+        BufErr::InvalidEndPoint);
 }
 
 #[test]
@@ -162,4 +163,11 @@ fn test_delete_region4() {
     assert_eq!(buf.lines.len(), 1);
     assert_eq!(buf.to_str(), "a\n");
     assert_eq!(buf.text_len, 2);
+}
+
+#[test]
+fn test_insert_edge_case1() {
+    let mut buf = Buffer::new();
+    assert_eq!(buf.insert_at_pt("a", &Point::new(0, 1)).unwrap_err(), BufErr::InvalidPoint);
+    assert_eq!(buf.insert_at_pt("a", &Point::new(1, 0)).unwrap_err(), BufErr::InvalidPoint);
 }

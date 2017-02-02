@@ -48,6 +48,8 @@ pub struct Buffer {
 #[derive(PartialEq, Debug)]
 pub enum BufErr {
     InvalidPoint,
+    InvalidStartPoint,
+    InvalidEndPoint,
     InvalidDeletionLength
 }
 
@@ -131,16 +133,16 @@ impl Buffer {
             (self.lines.len() > 0 && start.r < self.lines.len() &&
                 start.c > self.lines[start.r].len()) ||
             start.r == self.lines.len() && start.c != 0 {
-            return Err(BufErr::InvalidPoint);
+            return Err(BufErr::InvalidStartPoint);
         }
         if end.r > self.lines.len() ||
             (self.lines.len() > 0 && end.r < self.lines.len() &&
                 end.c > self.lines[end.r].len()) ||
             end.r == self.lines.len() && end.c != 0 {
-            return Err(BufErr::InvalidPoint);
+            return Err(BufErr::InvalidEndPoint);
         }
         if end < start {
-            return Err(BufErr::InvalidPoint)
+            return Err(BufErr::InvalidDeletionLength)
         }
         if end == start {
             return Ok("".to_string());
@@ -171,16 +173,16 @@ impl Buffer {
             (self.lines.len() > 0 && start.r < self.lines.len() &&
                 start.c > self.lines[start.r].len()) ||
             start.r == self.lines.len() && start.c != 0 {
-            return Err(BufErr::InvalidPoint);
+            return Err(BufErr::InvalidStartPoint);
         }
         if end.r > self.lines.len() ||
             (self.lines.len() > 0 && end.r < self.lines.len() &&
                 end.c > self.lines[end.r].len()) ||
             end.r == self.lines.len() && end.c != 0 {
-            return Err(BufErr::InvalidPoint);
+            return Err(BufErr::InvalidEndPoint);
         }
         if end < start {
-            return Err(BufErr::InvalidPoint)
+            return Err(BufErr::InvalidDeletionLength)
         }
         if end == start {
             return Ok("".to_string());
