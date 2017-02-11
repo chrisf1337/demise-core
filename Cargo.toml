@@ -1,10 +1,10 @@
 [package]
-name = "demise-core"
+name = "demise_core"
 version = "0.1.0"
 authors = ["Christopher Fu <chrisf1337@gmail.com>"]
 
 [dependencies]
-rmp = "0.7.5"
-rmp-serde = "0.10.0"
 buffer = { path = "buffer" }
-byteorder = "1.0.0"
+serde_json = "0.9"
+serde = "0.9"
+serde_derive = "0.9"

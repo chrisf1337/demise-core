@@ -1,48 +1,71 @@
-extern crate buffer;
-extern crate byteorder;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 
-use buffer::Buffer;
+extern crate buffer;
 
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 use std::sync::{Arc, Mutex};
-use std::io::{Cursor, Read, Write};
-use byteorder::{LittleEndian, ReadBytesExt};
+
+use buffer::Buffer;
+use serde_json::Value;
+
+mod actions;
+use actions::*;
+
+mod editor;
+use editor::Editor;
 
 const IN_PORT: i16 = 8765;
 const OUT_PORT: i16 = 8766;
 
-const PACKET_SIZE_BYTES: usize = 4;
+fn send_response(stream: &mut TcpStream, response: Response) {
+    match response.0 {
+        Ok(ResponseOk::ConnectResponse(resp)) => {
 
-struct Editor {
-    buffer: Buffer
+        }
+        Ok(_) => {
+
+        }
+        Err(err) => {
+
+        }
+    }
 }
 
-fn in_handle_client(mut stream: TcpStream) {
+fn in_handle_client(mut editor: Arc<Mutex<Editor>>, stream: TcpStream) -> Result<(), serde_json::Error>{
     println!("Inbound connection from {}", stream.peer_addr().unwrap().ip());
-
     loop {
-        let mut recv_buf: Vec<u8>;
-        let mut recv_size_buf = [0u8; PACKET_SIZE_BYTES];
-
-        let _ = match stream.read(&mut recv_size_buf) {
-            Err(e) => panic!("Got an error: {}", e),
-            Ok(m) => {
-                if m == 0 {
-                    break;
+        let input: serde_json::Result<Value> = serde_json::from_reader(&stream);
+        match input {
+            Ok(input) => {
+                println!("{:?}", input);
+                match input["method"].as_str() {
+                    Some("connect") => {
+                        let connect_input: ConnectRequest = serde_json::from_value(input)?;
+                        match connect_input.exec(&mut editor).0 {
+                            Ok(_) => {
+                                println!("connect method ok");
+                            }
+                            Err(err) => {
+                                println!("connect method err");
+                            }
+                        }
+                    }
+                    Some(&_) => {
+                        println!("Illegal input: {}", input);
+                    }
+                    None => {
+                        println!("Illegal input: {}", input);
+                    }
                 }
-                m
             }
-        };
-
-        println!("{:?}", recv_size_buf);
-        let recv_size = match Cursor::new(&recv_size_buf).read_u32::<LittleEndian>() {
-            Ok(size) => size,
-            Err(e) => {
-                panic!("Size conversion error: {}", e);
+            Err(err) => {
+                println!("Illegal input: {}", err);
+                continue;
             }
-        };
-        println!("Size received: {}", recv_size);
+        }
     }
 }
 
@@ -52,6 +75,7 @@ fn out_handle_client(stream: TcpStream) {
 
 fn main() {
     let editor = Arc::new(Mutex::new(Editor {
+        client_id: None,
         buffer: Buffer::new()
     }));
 
@@ -65,8 +89,16 @@ fn main() {
         for stream in in_listener.incoming() {
             match stream {
                 Ok(stream) => {
+                    let editor = editor.clone();
                     thread::spawn(move || {
-                        in_handle_client(stream);
+                        match in_handle_client(editor, stream) {
+                            Ok(_) => {
+                                println!("in_handle_client() exited successfully");
+                            }
+                            Err(err) => {
+                                println!("in_handle_client() exited with error: {:?}", err);
+                            }
+                        }
                     });
                 }
                 Err(e) => {
@@ -88,6 +120,18 @@ fn main() {
             }
         }
     });
+
+    let v = vec![
+        Response(Ok(ResponseOk::ConnectResponse(ConnRespStruct {
+            test_field: 214
+        }))),
+        Response(Ok(ResponseOk::Ok)),
+        Response(Err(ResponseErr::TestError))
+    ];
+
+    for elem in &v {
+        println!("{}", serde_json::to_string(elem).unwrap());
+    }
 
     in_thread.join().unwrap();
     out_thread.join().unwrap();

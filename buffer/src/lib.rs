@@ -56,6 +56,28 @@ pub enum BufErr {
 type BufResult = Result<(), BufErr>;
 type BufResultString = Result<String, BufErr>;
 
+fn push_multiple<T>(v: &mut Vec<T>, mut offset: usize, s: &[T]) where T: Clone + Default {
+    if s.len() == 0 {
+        return;
+    }
+    if v.len() == 0 {
+        v.extend_from_slice(s);
+        return;
+    }
+    assert!(offset <= v.len());
+    let pad = s.len() - ((v.len() - offset) % s.len());
+    v.extend(std::iter::repeat(Default::default()).take(pad));
+    v.extend_from_slice(s);
+    let total = v.len();
+    while total - offset >= s.len() {
+        for i in 0..s.len() {
+            v.swap(offset + i, total - s.len() + i);
+        }
+        offset += s.len();
+    }
+    v.truncate(total - pad);
+}
+
 impl Buffer {
     pub fn new() -> Buffer {
         Buffer {
@@ -94,9 +116,7 @@ impl Buffer {
             .map(|string| string.to_string().chars().collect::<Vec<_>>())
             .collect::<Vec<_>>();
         if row == self.lines.len() {
-            for line in lines.iter().take(lines.len() - 1) {
-                self.lines.push(line.clone());
-            }
+            self.lines.extend_from_slice(&lines[..lines.len() - 1]);
             if lines[lines.len() - 1].len() != 0 {
                 self.lines.push(lines[lines.len() - 1].clone());
                 // No terminating newline in string, but we add it when we
@@ -117,9 +137,7 @@ impl Buffer {
                 self.lines.insert(row + 1, last_line);
                 // Insert rest of the lines in the inserted string in reverse
                 // order
-                for line in lines[1..lines.len() - 1].iter().rev() {
-                    self.lines.insert(row + 1, line.clone());
-                }
+                push_multiple(&mut self.lines, row + 1, &lines[1..lines.len() - 1]);
             } else {
                 self.lines[row].extend(rest_of_line);
             }
