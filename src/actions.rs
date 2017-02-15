@@ -102,7 +102,7 @@ pub trait Request {
 
 impl Request for ConnectRequest {
     fn exec(&self, editor: &mut Arc<Mutex<Editor>>) -> Response {
-        println!("Calling Message exec() for ConnectMessage {:?}", self);
+        debug!("Calling Message exec() for ConnectMessage {:?}", self);
         let ed = editor.lock().unwrap();
         Response(Ok(ResponseOk::ConnectResponse(ConnRespStruct {
             test_field: 974

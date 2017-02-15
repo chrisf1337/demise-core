@@ -2,15 +2,15 @@
 extern crate serde_json;
 #[macro_use] extern crate log;
 extern crate env_logger;
-
-
 extern crate buffer;
+extern crate byteorder;
 
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 use std::sync::{Arc, Mutex};
-use std::io::{Read, Write, ErrorKind};
+use std::io::{Read, Write, ErrorKind, Cursor};
 
 use buffer::Buffer;
 use serde_json::Value;
@@ -23,11 +23,52 @@ use editor::Editor;
 
 const IN_PORT: i16 = 8765;
 const OUT_PORT: i16 = 8766;
+const PACKET_SIZE_BYTES: usize = 4;
 
 fn in_handle_client(mut editor: Arc<Mutex<Editor>>, mut stream: TcpStream) {
     debug!("Inbound connection from {}", stream.peer_addr().unwrap().ip());
     loop {
-        let input: serde_json::Result<Value> = serde_json::from_reader(&stream);
+        let mut recv_buf: Vec<u8>;
+        let mut recv_size_buf = [0u8; PACKET_SIZE_BYTES];
+
+        let _ = match stream.read(&mut recv_size_buf) {
+            Err(e) => {
+                error!("Stream read error: {}", e);
+                continue;
+            }
+            Ok(m) => {
+                if m == 0 {
+                    error!("Client disconnected (stream read 0 bytes)");
+                    break;
+                }
+                m
+            }
+        };
+        let recv_size = match Cursor::new(&recv_size_buf).read_u32::<LittleEndian>() {
+            Ok(size) => size,
+            Err(e) => {
+                panic!("Size conversion error: {}", e);
+            }
+        };
+        debug!("Size received: {}", recv_size);
+
+        recv_buf = vec![0; recv_size as usize];
+        let _ = match stream.read(&mut recv_buf[..]) {
+            Err(e) => {
+                error!("Stream read error: {}", e);
+                continue;
+            }
+            Ok(m) => {
+                if m == 0 {
+                    error!("Client disconnected (stream read 0 bytes)");
+                    break;
+                }
+                m
+            }
+        };
+
+        let input: serde_json::Result<Value> = serde_json::from_slice(&recv_buf[..]);
+
         debug!("deserialized input: {:?}", input);
         let response = match input {
             Ok(input) => {
@@ -64,8 +105,19 @@ fn in_handle_client(mut editor: Arc<Mutex<Editor>>, mut stream: TcpStream) {
             continue;
         }
         let s = response_str.unwrap();
-        match stream.write(s.as_bytes()) {
-            Ok(_) => debug!("Sent response to client: {}", s),
+        let sb = s.as_bytes();
+        let sblen = sb.len();
+        let mut send_buf = vec![];
+        match send_buf.write_u32::<LittleEndian>(sblen as u32) {
+            Ok(_) => {}
+            Err(err) => {
+                panic!("Size conversion error: {}", err);
+                break;
+            }
+        }
+        send_buf.extend_from_slice(sb);
+        match stream.write(&send_buf[..]) {
+            Ok(_) => debug!("Sent {}-byte response to client: {}", sblen, s),
             Err(err) => {
                 match err.kind() {
                     ErrorKind::BrokenPipe => {
