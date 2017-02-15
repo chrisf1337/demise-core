@@ -8,3 +8,5 @@ buffer = { path = "buffer" }
 serde_json = "0.9"
 serde = "0.9"
 serde_derive = "0.9"
+log = "*"
+env_logger = "*"

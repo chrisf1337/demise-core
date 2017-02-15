@@ -14,8 +14,11 @@ pub enum Method {
 
 #[derive(Copy, Clone)]
 pub enum ResponseErr {
-    InvalidMethod = 0,
-    TestError = 1
+    MalformedInput,
+    InvalidMethod,
+    MissingMethod,
+    TestError,
+    DeserializationError
 }
 
 pub enum ResponseOk {
@@ -31,8 +34,11 @@ pub struct ConnRespStruct {
 impl fmt::Display for ResponseErr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &ResponseErr::TestError => { write!(f, "test error") }
+            &ResponseErr::MalformedInput => { write!(f, "malformed input") }
             &ResponseErr::InvalidMethod => { write!(f, "invalid method") }
+            &ResponseErr::MissingMethod => { write!(f, "missing method") }
+            &ResponseErr::TestError => { write!(f, "test error") },
+            &ResponseErr::DeserializationError => { write!(f, "deserialization error") }
         }
     }
 }
