@@ -13,7 +13,7 @@ impl log::Log for ColorLogger {
     }
 
     fn log(&self, record: &LogRecord) {
-        let string = format!("{} [{}] {}.{}: {}",
+        let string = format!("{} [{: <5}] {}.{}: {}",
             time::now().rfc3339(),
             record.level(),
             record.location().file(),
@@ -25,7 +25,7 @@ impl log::Log for ColorLogger {
             LogLevel::Info => Cyan.paint(string),
             _ => White.paint(string)
         };
-        writeln!(&mut std::io::stderr(), "{}", colored_string);
+        let _ = writeln!(&mut std::io::stderr(), "{}", colored_string);
     }
 }
 

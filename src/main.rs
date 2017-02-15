@@ -39,7 +39,7 @@ fn in_handle_client(mut editor: Arc<Mutex<Editor>>, mut stream: TcpStream) {
             }
             Ok(m) => {
                 if m == 0 {
-                    error!("Client disconnected (stream read 0 bytes)");
+                    info!("Client disconnected (stream read 0 bytes)");
                     break;
                 }
                 m
@@ -61,7 +61,7 @@ fn in_handle_client(mut editor: Arc<Mutex<Editor>>, mut stream: TcpStream) {
             }
             Ok(m) => {
                 if m == 0 {
-                    error!("Client disconnected (stream read 0 bytes)");
+                    info!("Client disconnected (stream read 0 bytes)");
                     break;
                 }
                 m
@@ -113,7 +113,6 @@ fn in_handle_client(mut editor: Arc<Mutex<Editor>>, mut stream: TcpStream) {
             Ok(_) => {}
             Err(err) => {
                 panic!("Size conversion error: {}", err);
-                break;
             }
         }
         send_buf.extend_from_slice(sb);
@@ -122,7 +121,7 @@ fn in_handle_client(mut editor: Arc<Mutex<Editor>>, mut stream: TcpStream) {
             Err(err) => {
                 match err.kind() {
                     ErrorKind::BrokenPipe => {
-                        error!("Client disconnected");
+                        info!("Client disconnected");
                         break;
                     }
                     _ => error!("Stream write error: {}", err)
@@ -133,7 +132,7 @@ fn in_handle_client(mut editor: Arc<Mutex<Editor>>, mut stream: TcpStream) {
 }
 
 fn out_handle_client(stream: TcpStream) {
-    println!("Outbound connection to {}", stream.peer_addr().unwrap().ip());
+    debug!("Outbound connection to {}", stream.peer_addr().unwrap().ip());
 }
 
 fn main() {
@@ -147,8 +146,8 @@ fn main() {
     let in_listener = TcpListener::bind(format!("127.0.0.1:{}", IN_PORT).as_str()).unwrap();
     let out_listener = TcpListener::bind(format!("127.0.0.1:{}", OUT_PORT).as_str()).unwrap();
 
-    println!("Listening for input on port {}", IN_PORT);
-    println!("Sending output on port {}", OUT_PORT);
+    debug!("Listening for input on port {}", IN_PORT);
+    debug!("Sending output on port {}", OUT_PORT);
 
     let in_thread = thread::spawn(move || {
         for stream in in_listener.incoming() {
@@ -162,7 +161,7 @@ fn main() {
                     });
                 }
                 Err(e) => {
-                    println!("In listener error: {}", e);
+                    error!("In listener error: {}", e);
                 }
             }
         }
@@ -175,7 +174,7 @@ fn main() {
 
                 }
                 Err(e) => {
-                    println!("Out listener error: {}", e);
+                    error!("Out listener error: {}", e);
                 }
             }
         }
@@ -190,7 +189,7 @@ fn main() {
     ];
 
     for elem in &v {
-        println!("{}", serde_json::to_string(elem).unwrap());
+        debug!("{}", serde_json::to_string(elem).unwrap());
     }
 
     in_thread.join().unwrap();
