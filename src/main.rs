@@ -34,7 +34,7 @@ fn send_response(stream: &mut TcpStream, response: Response) {
     }
 }
 
-fn in_handle_client(mut editor: Arc<Mutex<Editor>>, stream: TcpStream) -> Result<(), serde_json::Error>{
+fn in_handle_client(mut editor: Arc<Mutex<Editor>>, stream: TcpStream) -> Result<(), serde_json::Error> {
     println!("Inbound connection from {}", stream.peer_addr().unwrap().ip());
     loop {
         let input: serde_json::Result<Value> = serde_json::from_reader(&stream);

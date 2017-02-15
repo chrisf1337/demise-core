@@ -12,8 +12,10 @@ pub enum Method {
     Connect
 }
 
+#[derive(Copy, Clone)]
 pub enum ResponseErr {
-    TestError
+    InvalidMethod = 0,
+    TestError = 1
 }
 
 pub enum ResponseOk {
@@ -30,6 +32,7 @@ impl fmt::Display for ResponseErr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &ResponseErr::TestError => { write!(f, "test error") }
+            &ResponseErr::InvalidMethod => { write!(f, "invalid method") }
         }
     }
 }
@@ -45,8 +48,11 @@ pub struct Response(pub Result<ResponseOk, ResponseErr>);
 
 impl Serialize for ResponseErr {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        // Serialize as string
-        serializer.serialize_str(&self.to_string())
+        // Serialize as objection with two fields, an error code and an error message
+        let mut map = serializer.serialize_map(Some(2))?;
+        map.serialize_entry("code", &(*self as i32))?;
+        map.serialize_entry("message", &self.to_string())?;
+        map.end()
     }
 }
 
