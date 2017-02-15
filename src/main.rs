@@ -1,9 +1,9 @@
 #[macro_use] extern crate serde_derive;
 extern crate serde_json;
 #[macro_use] extern crate log;
-extern crate env_logger;
 extern crate buffer;
 extern crate byteorder;
+extern crate color_logger;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
@@ -11,6 +11,7 @@ use std::net::{TcpListener, TcpStream};
 use std::thread;
 use std::sync::{Arc, Mutex};
 use std::io::{Read, Write, ErrorKind, Cursor};
+use log::LogLevelFilter;
 
 use buffer::Buffer;
 use serde_json::Value;
@@ -136,7 +137,7 @@ fn out_handle_client(stream: TcpStream) {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    color_logger::init(LogLevelFilter::Debug).unwrap();
 
     let editor = Arc::new(Mutex::new(Editor {
         client_id: None,

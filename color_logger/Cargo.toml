@@ -1,0 +1,9 @@
+[package]
+name = "color_logger"
+version = "0.1.0"
+authors = ["Christopher Fu <chrisf1337@gmail.com>"]
+
+[dependencies]
+log = "*"
+ansi_term = "0.9"
+time = "0.1"
