@@ -1,6 +1,8 @@
+#[macro_use] extern crate serde_derive;
+
 use std::cmp::Ordering;
 
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, Serialize, Deserialize)]
 pub struct Point {
     r: usize,
     c: usize,
@@ -45,6 +47,12 @@ pub struct Buffer {
     pub point: Point
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct Line {
+    pub line: String,
+    pub number: usize
+}
+
 #[derive(PartialEq, Debug)]
 pub enum BufErr {
     InvalidPoint,
@@ -53,8 +61,7 @@ pub enum BufErr {
     InvalidDeletionLength
 }
 
-type BufResult = Result<(), BufErr>;
-type BufResultString = Result<String, BufErr>;
+type BufResult<T> = Result<T, BufErr>;
 
 fn push_multiple<T>(v: &mut Vec<T>, mut offset: usize, s: &[T]) where T: Clone + Default {
     if s.len() == 0 {
@@ -76,6 +83,37 @@ fn push_multiple<T>(v: &mut Vec<T>, mut offset: usize, s: &[T]) where T: Clone +
         offset += s.len();
     }
     v.truncate(total - pad);
+}
+
+pub trait IntoLine {
+    fn into_line(self, number: usize) -> Line;
+}
+
+impl IntoLine for String {
+    fn into_line(self, number: usize) -> Line {
+        Line {
+            number: number,
+            line: self
+        }
+    }
+}
+
+impl<'a> IntoLine for &'a str {
+    fn into_line(self, number: usize) -> Line {
+        Line {
+            number: number,
+            line: self.to_string()
+        }
+    }
+}
+
+impl Line {
+    fn new(number: usize, line: String) -> Line {
+        Line {
+            number: number,
+            line: line
+        }
+    }
 }
 
 impl Buffer {
@@ -104,7 +142,7 @@ impl Buffer {
         buf
     }
 
-    pub fn insert_at_pt(&mut self, string: &str, pt: &Point) -> BufResult {
+    pub fn insert_at_pt(&mut self, string: &str, pt: &Point) -> BufResult<Vec<Line>> {
         let row = pt.r;
         let col = pt.c;
         if row > self.lines.len() ||
@@ -115,6 +153,16 @@ impl Buffer {
         let lines = string.split("\n")
             .map(|string| string.to_string().chars().collect::<Vec<_>>())
             .collect::<Vec<_>>();
+
+        // When we return the modified lines, we need to be careful not to run
+        // past the end of self.lines if the inserted string ends in a newline
+        // and the insertion point is at past the end of the buffer (i.e.,
+        // creating a new line at the end of the buffer)
+        let n_lines = if lines[lines.len() - 1].len() == 0 && row == self.lines.len() {
+            lines.len() - 1
+        } else {
+            lines.len()
+        };
         if row == self.lines.len() {
             self.lines.extend_from_slice(&lines[..lines.len() - 1]);
             if lines[lines.len() - 1].len() != 0 {
@@ -143,10 +191,15 @@ impl Buffer {
             }
         }
         self.text_len += string.len();
-        Ok(())
+
+        let mut modified_lines = vec![];
+        for (i, line) in self.lines[row..row + n_lines].iter().enumerate() {
+            modified_lines.push(Line::new(row + i, line.iter().cloned().collect()));
+        }
+        Ok(modified_lines)
     }
 
-    pub fn region_to_str(&self, start: &Point, end: &Point) -> BufResultString {
+    pub fn region_to_str(&self, start: &Point, end: &Point) -> BufResult<String> {
         if start.r > self.lines.len() ||
             (self.lines.len() > 0 && start.r < self.lines.len() &&
                 start.c > self.lines[start.r].len()) ||
@@ -186,7 +239,7 @@ impl Buffer {
         Ok(string)
     }
 
-    pub fn delete_region(&mut self, start: &Point, end: &Point) -> BufResultString {
+    pub fn delete_region(&mut self, start: &Point, end: &Point) -> BufResult<String> {
         if start.r > self.lines.len() ||
             (self.lines.len() > 0 && start.r < self.lines.len() &&
                 start.c > self.lines[start.r].len()) ||

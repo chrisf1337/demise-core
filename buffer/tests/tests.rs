@@ -1,10 +1,12 @@
 extern crate buffer;
-use buffer::{Buffer, Point, BufErr};
+use buffer::{Buffer, Point, BufErr, IntoLine};
 
 #[test]
 fn test_insert_empty_buffer1() {
     let mut buf = Buffer::new();
-    assert!(buf.insert_at_pt("abc\n", &Point::new(0, 0)).is_ok());
+    assert_eq!(buf.insert_at_pt("abc\n", &Point::new(0, 0)), Ok(vec![
+        "abc".into_line(0)
+    ]));
     assert_eq!(buf.text_len, 4);
     assert_eq!(buf.lines.len(), 1);
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(0, 1)).unwrap(), "a");
@@ -19,7 +21,12 @@ fn test_insert_empty_buffer1() {
 #[test]
 fn test_insert_empty_buffer2() {
     let mut buf = Buffer::new();
-    assert!(buf.insert_at_pt("abc\nde", &Point::new(0, 0)).is_ok());
+    assert_eq!(buf.insert_at_pt("abc\nde", &Point::new(0, 0)),
+        Ok(vec![
+            "abc".into_line(0),
+            "de".into_line(1)
+        ])
+    );
     assert_eq!(buf.text_len, 7);
     assert_eq!(buf.lines.len(), 2);
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(1, 0)).unwrap(), "abc\n");
@@ -35,7 +42,11 @@ fn test_insert_existing_buffer1() {
     let mut buf = Buffer::new();
     assert!(buf.insert_at_pt("abc\nde", &Point::new(0, 0)).is_ok());
     assert_eq!(buf.text_len, 7);
-    assert!(buf.insert_at_pt("!", &Point::new(0, 0)).is_ok());
+    assert_eq!(buf.insert_at_pt("!", &Point::new(0, 0)),
+        Ok(vec![
+            "!abc".into_line(0)
+        ])
+    );
     assert_eq!(buf.text_len, 8);
     assert_eq!(buf.lines.len(), 2);
     // !abc
@@ -43,7 +54,12 @@ fn test_insert_existing_buffer1() {
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(0, 2)).unwrap(), "!a");
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(1, 0)).unwrap(), "!abc\n");
 
-    assert!(buf.insert_at_pt("1\n1", &Point::new(0, 4)).is_ok());
+    assert_eq!(buf.insert_at_pt("1\n1", &Point::new(0, 4)),
+        Ok(vec![
+            "!abc1".into_line(0),
+            "1".into_line(1)
+        ])
+    );
     assert_eq!(buf.text_len, 11);
     assert_eq!(buf.lines.len(), 3);
     // !abc1
@@ -53,14 +69,24 @@ fn test_insert_existing_buffer1() {
     assert_eq!(buf.region_to_str(&Point::new(1, 0), &Point::new(2, 0)).unwrap(), "1\n");
     assert_eq!(buf.region_to_str(&Point::new(2, 0), &Point::new(3, 0)).unwrap(), "de\n");
 
-    assert!(buf.insert_at_pt("12", &Point::new(1, 1)).is_ok());
+    assert_eq!(buf.insert_at_pt("12", &Point::new(1, 1)),
+        Ok(vec![
+            "112".into_line(1)
+        ])
+    );
     assert_eq!(buf.text_len, 13);
     // !abc1
     // 112
     // de
     assert_eq!(buf.region_to_str(&Point::new(1, 0), &Point::new(2, 0)).unwrap(), "112\n");
 
-    assert!(buf.insert_at_pt("ab\ncde\n", &Point::new(1, 1)).is_ok());
+    assert_eq!(buf.insert_at_pt("ab\ncde\n", &Point::new(1, 1)),
+        Ok(vec![
+            "1ab".into_line(1),
+            "cde".into_line(2),
+            "12".into_line(3)
+        ])
+    );
     assert_eq!(buf.text_len, 20);
     // !abc1
     // 1ab
@@ -69,7 +95,12 @@ fn test_insert_existing_buffer1() {
     // de
     assert_eq!(buf.region_to_str(&Point::new(1, 0), &Point::new(5 ,0)).unwrap(), "1ab\ncde\n12\nde\n");
 
-    assert!(buf.insert_at_pt("\n", &Point::new(2, 2)).is_ok());
+    assert_eq!(buf.insert_at_pt("\n", &Point::new(2, 2)),
+        Ok(vec![
+            "cd".into_line(2),
+            "e".into_line(3)
+        ])
+    );
     assert_eq!(buf.text_len, 21);
     // !abc1
     // 1ab
@@ -85,7 +116,12 @@ fn test_insert_end_of_buffer1() {
     let mut buf = Buffer::with_contents("abc\ndef\nghi");
     assert_eq!(buf.text_len, 12);
 
-    assert!(buf.insert_at_pt("a\nb\n", &Point::new(3, 0)).is_ok());
+    assert_eq!(buf.insert_at_pt("a\nb\n", &Point::new(3, 0)),
+        Ok(vec![
+            "a".into_line(3),
+            "b".into_line(4)
+        ])
+    );
     assert_eq!(buf.region_to_str(&Point::new(0, 0), &Point::new(5, 0)).unwrap(),
         "abc\ndef\nghi\na\nb\n");
     assert_eq!(buf.text_len, 16);

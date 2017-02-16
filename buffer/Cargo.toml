@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["Christopher Fu <chrisf1337@gmail.com>"]
 
 [dependencies]
+serde = "0.9"
+serde_derive = "0.9"
