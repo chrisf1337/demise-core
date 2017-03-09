@@ -11,3 +11,4 @@ serde_derive = "0.9"
 log = "*"
 color_logger = { path = "color_logger" }
 byteorder = "1.0.0"
+uuid = { version = "0.3", features = ["v4"] }

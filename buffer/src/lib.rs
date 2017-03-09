@@ -1,6 +1,7 @@
 #[macro_use] extern crate serde_derive;
 
 use std::cmp::Ordering;
+use std::fmt;
 
 #[derive(Debug, Eq, Serialize, Deserialize)]
 pub struct Point {
@@ -59,6 +60,17 @@ pub enum BufErr {
     InvalidStartPoint,
     InvalidEndPoint,
     InvalidDeletionLength
+}
+
+impl fmt::Display for BufErr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &BufErr::InvalidPoint => { write!(f, "invalid point") }
+            &BufErr::InvalidStartPoint => { write!(f, "invalid start point") }
+            &BufErr::InvalidEndPoint => { write!(f, "invalid end point") }
+            &BufErr::InvalidDeletionLength => { write!(f, "invalid deletion length") }
+        }
+    }
 }
 
 type BufResult<T> = Result<T, BufErr>;

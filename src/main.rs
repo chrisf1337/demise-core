@@ -4,6 +4,7 @@ extern crate serde_json;
 extern crate buffer;
 extern crate byteorder;
 extern crate color_logger;
+extern crate uuid;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
@@ -13,7 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::io::{Read, Write, ErrorKind, Cursor};
 use log::LogLevelFilter;
 
-use buffer::Buffer;
+use buffer::{Buffer, IntoLine};
 use serde_json::Value;
 
 mod actions;
@@ -71,41 +72,49 @@ fn in_handle_client(mut editor: Arc<Mutex<Editor>>, mut stream: TcpStream) {
         let input: serde_json::Result<Value> = serde_json::from_slice(&recv_buf[..]);
 
         debug!("deserialized input: {:?}", input);
-        let response = match input {
+        let resp = match input {
             Ok(input) => {
                 debug!("{:?}", input);
                 match input["method"].as_str() {
                     Some("connect") => {
-                        let connect_input: Result<ConnectRequest, serde_json::error::Error> =
+                        let connect_input: Result<ConnectReq, serde_json::error::Error> =
                             serde_json::from_value(input);
                         match connect_input {
-                            Ok(cinp) => cinp.exec(&mut editor),
-                            Err(_) => Response(Err(ResponseErr::DeserializationError))
+                            Ok(inp) => inp.exec(&mut editor),
+                            Err(_) => Resp(Err(RespErr::DeserializationError))
+                        }
+                    }
+                    Some("insertAtPt") => {
+                        let insert_input: Result<InsertAtPtReq, serde_json::error::Error> =
+                            serde_json::from_value(input);
+                        match insert_input {
+                            Ok(inp) => inp.exec(&mut editor),
+                            Err(_) => Resp(Err(RespErr::DeserializationError))
                         }
                     }
                     Some(&_) => {
                         warn!("Invalid method: {}", input);
-                        Response(Err(ResponseErr::InvalidMethod))
+                        Resp(Err(RespErr::InvalidMethod))
                     }
                     None => {
                         error!("Missing method: {}", input);
-                        Response(Err(ResponseErr::MissingMethod))
+                        Resp(Err(RespErr::MissingMethod))
                     }
                 }
             }
             Err(err) => {
                 error!("Illegal input: {}", err);
-                Response(Err(ResponseErr::MalformedInput))
+                Resp(Err(RespErr::MalformedInput))
             }
         };
 
-        // Send response back to client
-        let response_str = serde_json::to_string(&response);
-        if response_str.is_err() {
-            error!("Serialization error: {}", response_str.unwrap_err());
+        // Send resp back to client
+        let resp_str = serde_json::to_string(&resp);
+        if resp_str.is_err() {
+            error!("Serialization error: {}", resp_str.unwrap_err());
             continue;
         }
-        let s = response_str.unwrap();
+        let s = resp_str.unwrap();
         let sb = s.as_bytes();
         let sblen = sb.len();
         let mut send_buf = vec![];
@@ -117,7 +126,7 @@ fn in_handle_client(mut editor: Arc<Mutex<Editor>>, mut stream: TcpStream) {
         }
         send_buf.extend_from_slice(sb);
         match stream.write(&send_buf[..]) {
-            Ok(_) => debug!("Sent {}-byte response to client: {}", sblen, s),
+            Ok(_) => debug!("Sent {}-byte resp to client: {}", sblen, s),
             Err(err) => {
                 match err.kind() {
                     ErrorKind::BrokenPipe => {
@@ -140,6 +149,7 @@ fn main() {
 
     let editor = Arc::new(Mutex::new(Editor {
         client_id: None,
+        server_id = Uuid::new_v4(),
         buffer: Buffer::new()
     }));
 
@@ -181,11 +191,13 @@ fn main() {
     });
 
     let v = vec![
-        Response(Ok(ResponseOk::ConnectResponse(ConnRespStruct {
-            test_field: 214
-        }))),
-        Response(Ok(ResponseOk::Ok)),
-        Response(Err(ResponseErr::TestError))
+        Resp(Ok(RespOk::ConnectResp(ConnRespStruct {}))),
+        Resp(Ok(RespOk::Ok)),
+        Resp(Err(RespErr::TestError)),
+        Resp(Ok(RespOk::InsertAtPtOk(vec![
+            "ab".into_line(0),
+            "cd".into_line(1)
+        ])))
     ];
 
     for elem in &v {

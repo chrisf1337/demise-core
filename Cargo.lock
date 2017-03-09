@@ -19,6 +19,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "buffer"
 version = "0.1.0"
+dependencies = [
+ "serde 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "byteorder"
