@@ -149,9 +149,15 @@ fn main() {
 
     let editor = Arc::new(Mutex::new(Editor {
         client_id: None,
-        server_id = Uuid::new_v4(),
+        server_id: uuid::Uuid::new_v4(),
         buffer: Buffer::new()
     }));
+
+    {
+        let mut ed = editor.lock().unwrap();
+        ed.server_id = uuid::Uuid::new_v4();
+    }
+
 
     let in_listener = TcpListener::bind(format!("127.0.0.1:{}", IN_PORT).as_str()).unwrap();
     let out_listener = TcpListener::bind(format!("127.0.0.1:{}", OUT_PORT).as_str()).unwrap();
@@ -191,7 +197,9 @@ fn main() {
     });
 
     let v = vec![
-        Resp(Ok(RespOk::ConnectResp(ConnRespStruct {}))),
+        Resp(Ok(RespOk::ConnectResp(ConnRespStruct {
+            server_id: "12345".to_string()
+        }))),
         Resp(Ok(RespOk::Ok)),
         Resp(Err(RespErr::TestError)),
         Resp(Ok(RespOk::InsertAtPtOk(vec![

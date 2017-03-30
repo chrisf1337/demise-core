@@ -14,7 +14,9 @@ pub enum Method {
     #[serde(rename = "connect")]
     Connect,
     #[serde(rename = "insertAtPt")]
-    InsertAtPt
+    InsertAtPt,
+    #[serde(rename = "getLines")]
+    GetLines
 }
 
 /* === Requests === */
@@ -35,6 +37,13 @@ pub struct InsertAtPtReq {
     pub string: String
 }
 
+#[derive(Deserialize, Debug)]
+pub struct GetLinesReq {
+    #[serde(rename = "clientId")]
+    pub client_id: String,
+    pub method: Method,
+}
+
 pub trait Req {
     fn exec(&self, editor: &mut Arc<Mutex<Editor>>) -> Resp;
 }
@@ -50,7 +59,7 @@ impl Req for ConnectReq {
             None => {
                 ed.client_id = Some(self.client_id.clone());
                 Resp(Ok(RespOk::ConnectResp(ConnRespStruct {
-                    server_id: ed.server_id
+                    server_id: ed.server_id.to_string()
                 })))
             }
         }
@@ -106,7 +115,7 @@ fn resp_err_code(resp_err: &RespErr) -> i32 {
 pub struct ConnRespStruct {
     #[serde(rename = "serverId")]
     pub server_id: String
-};
+}
 
 impl fmt::Display for RespErr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
